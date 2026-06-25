@@ -85,7 +85,9 @@ public class Animal : MonoBehaviour
 
     public void SetLocked(bool locked)
     {
-        if (lockIndicator) lockIndicator.SetActive(locked && CurrentState == State.Free);
+        bool show = locked && CurrentState == State.Free;
+        if (lockIndicator) lockIndicator.SetActive(show);
+        if (sr != null) sr.color = show ? new Color(1f, 0.9f, 0.45f) : Color.white;
     }
 
     // 플레이어가 유인할 때 매 프레임 호출. 가득 차면 true 반환.

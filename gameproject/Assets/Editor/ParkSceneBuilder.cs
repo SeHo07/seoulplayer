@@ -22,22 +22,21 @@ public static class ParkSceneBuilder
         EnsureFolder("Assets/04_Sprites", "_ParkPlaceholder");
         EnsureFolder("Assets", "01_Scenes");
 
-        Sprite playerS = MakeSprite("keeper", 48, 56, "#3f7bd6", "#274f8a");
+        Sprite playerS = MakeSprite("keeper", 70, 130, "#3f7bd6", "#274f8a", SpriteAlignment.BottomCenter);
         Sprite gaugeBg = MakeSprite("gauge_bg", 44, 10, "#222222", "#000000");
         Sprite gaugeFill = MakeSprite("gauge_fill", 44, 10, "#5fd06a", "#3a9c45", SpriteAlignment.LeftCenter);
-        Sprite lockS = MakeSprite("lock_ring", 64, 72, "#ffd54a", "#e0a615");
 
-        var animals = new (string name, string hex, string dark)[]
+        // 실제 동물 이미지 (Assets/04_Sprites/Animals/*.png)
+        var animals = new (string name, string file)[]
         {
-            ("호랑이", "#e8954a", "#a8632a"), ("토끼", "#e9e0d2", "#c2b39a"),
-            ("원숭이", "#9b6b43", "#67462c"), ("코끼리", "#9aa0a6", "#646a70"),
-            ("펭귄", "#3a4250", "#20252e"),
+            ("수달", "sudal"), ("코끼리", "elephant"), ("펭귄", "penguin"),
+            ("사자", "lion"), ("원숭이", "monkey"),
         };
 
         var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
         // 배경(가로로 긴 어린이대공원)
-        Sprite bg = ImportSprite(BgPath);
+        Sprite bg = ImportSprite(BgPath, SpriteAlignment.Center, 100f, 8192);
         float bgW = 40f, bgH = 8f;
         if (bg != null) { bgW = bg.bounds.size.x; bgH = bg.bounds.size.y; }
         float halfH = bgH * 0.5f;
@@ -94,8 +93,8 @@ public static class ParkSceneBuilder
         for (int i = 0; i < animals.Length; i++)
         {
             float x = Mathf.Lerp(leftEdge, rightEdge, (i + 0.5f) / animals.Length);
-            Sprite body = MakeSprite($"animal_{i}_{animals[i].name}", 46, 46, animals[i].hex, animals[i].dark);
-            BuildAnimal(animals[i].name, new Vector3(x, playY, 0f), body, lockS, gaugeBg, gaugeFill);
+            Sprite body = ImportSprite($"Assets/04_Sprites/Animals/{animals[i].file}.png", SpriteAlignment.BottomCenter, 650f, 2048);
+            BuildAnimal(animals[i].name, new Vector3(x, playY, 0f), body, gaugeBg, gaugeFill);
         }
 
         // 매니저
@@ -154,7 +153,7 @@ public static class ParkSceneBuilder
         Debug.Log("[ParkSceneBuilder] 씬 생성 완료: " + ScenePath);
     }
 
-    private static void BuildAnimal(string name, Vector3 pos, Sprite body, Sprite lockS, Sprite gaugeBg, Sprite gaugeFill)
+    private static void BuildAnimal(string name, Vector3 pos, Sprite body, Sprite gaugeBg, Sprite gaugeFill)
     {
         var go = new GameObject("Animal_" + name);
         go.transform.position = pos;
@@ -163,19 +162,13 @@ public static class ParkSceneBuilder
         sr.sortingOrder = 0;
         var animal = go.AddComponent<Animal>();
 
-        // 록온 링(동물 뒤)
-        var ring = new GameObject("LockRing");
-        ring.transform.SetParent(go.transform, false);
-        var rsr = ring.AddComponent<SpriteRenderer>();
-        rsr.sprite = lockS;
-        rsr.sortingOrder = -1;
-        rsr.color = new Color(1f, 1f, 1f, 0.7f);
-        ring.SetActive(false);
+        // 동물 실제 높이(바닥 피벗 기준 머리 위까지)
+        float h = body != null ? body.bounds.size.y : 1f;
 
-        // 유인 게이지(동물 위)
+        // 유인 게이지(머리 위)
         var gaugeRoot = new GameObject("Gauge");
         gaugeRoot.transform.SetParent(go.transform, false);
-        gaugeRoot.transform.localPosition = new Vector3(0f, 0.42f, 0f);
+        gaugeRoot.transform.localPosition = new Vector3(0f, h + 0.15f, 0f);
 
         var bg = new GameObject("Bg");
         bg.transform.SetParent(gaugeRoot.transform, false);
@@ -192,7 +185,6 @@ public static class ParkSceneBuilder
 
         gaugeRoot.SetActive(false);
 
-        SetRef(animal, "lockIndicator", ring);
         SetRef(animal, "gaugeRoot", gaugeRoot);
         SetRef(animal, "gaugeFill", fill.transform);
     }
@@ -271,12 +263,12 @@ public static class ParkSceneBuilder
         return AssetDatabase.LoadAssetAtPath<Sprite>(path);
     }
 
-    // 이미 존재하는 PNG(배경)를 Sprite로 임포트
-    private static Sprite ImportSprite(string path)
+    // 이미 존재하는 PNG를 Sprite로 임포트 (정렬/PPU/최대크기 지정)
+    private static Sprite ImportSprite(string path, SpriteAlignment align, float ppu, int maxSize)
     {
         if (!File.Exists(path))
         {
-            Debug.LogWarning("[ParkSceneBuilder] 배경 파일 없음: " + path);
+            Debug.LogWarning("[ParkSceneBuilder] 파일 없음: " + path);
             return null;
         }
         AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
@@ -285,9 +277,13 @@ public static class ParkSceneBuilder
         {
             imp.textureType = TextureImporterType.Sprite;
             imp.spriteImportMode = SpriteImportMode.Single;
-            imp.spritePixelsPerUnit = 100;
-            imp.maxTextureSize = 8192;   // 5472px 폭 유지
+            imp.spritePixelsPerUnit = ppu;
+            imp.maxTextureSize = maxSize;
             imp.mipmapEnabled = false;
+            var s = new TextureImporterSettings();
+            imp.ReadTextureSettings(s);
+            s.spriteAlignment = (int)align;
+            imp.SetTextureSettings(s);
             imp.SaveAndReimport();
         }
         return AssetDatabase.LoadAssetAtPath<Sprite>(path);
