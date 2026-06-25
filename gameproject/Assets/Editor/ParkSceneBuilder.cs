@@ -23,6 +23,7 @@ public static class ParkSceneBuilder
     {
         EnsureFolderPath(SpriteDir);
         EnsureFolderPath(GameDir + "/Scenes");
+        AssetDatabase.Refresh(); // 새 폴더를 Unity가 인식하도록
 
         Sprite playerS = MakeSprite("keeper", 70, 130, "#3f7bd6", "#274f8a", SpriteAlignment.BottomCenter);
         // 록온 선택 링 + 충전 게이지 + 타이밍 바 (3배 해상도 @ PPU 300 → 월드 크기 동일, 선명하게)
@@ -706,14 +707,10 @@ public static class ParkSceneBuilder
             AssetDatabase.CreateFolder(parent, child);
     }
 
-    // 중첩 경로 폴더를 한 단계씩 생성 (예: Assets/Games/.../Sprites/_ParkPlaceholder)
+    // 중첩 경로 폴더 생성(디스크에 직접 만들고 임포트). 파인더로 만든 폴더도 인식되게.
     private static void EnsureFolderPath(string folder)
     {
-        if (AssetDatabase.IsValidFolder(folder)) return;
-        string parent = Path.GetDirectoryName(folder).Replace("\\", "/");
-        string name = Path.GetFileName(folder);
-        if (!AssetDatabase.IsValidFolder(parent)) EnsureFolderPath(parent);
-        AssetDatabase.CreateFolder(parent, name);
+        Directory.CreateDirectory(folder); // 프로젝트 루트 기준 상대경로
     }
 
     private static void AddSceneToBuildSettings(string path)

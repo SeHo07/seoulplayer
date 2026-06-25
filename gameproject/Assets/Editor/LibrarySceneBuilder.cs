@@ -26,6 +26,7 @@ public static class LibrarySceneBuilder
         EnsureFolderPath(DataDir);
         EnsureFolderPath(GameDir + "/Prefabs");
         EnsureFolderPath(GameDir + "/Scenes");
+        AssetDatabase.Refresh(); // 새 폴더를 Unity가 인식하도록
 
         // 1) 임시 스프라이트 생성
         Sprite playerSprite = MakeSprite("player", 48, 48, "#3f7bd6", "#274f8a");
@@ -365,14 +366,10 @@ public static class LibrarySceneBuilder
             AssetDatabase.CreateFolder(parent, child);
     }
 
-    // 중첩 경로 폴더를 한 단계씩 생성
+    // 중첩 경로 폴더 생성(디스크에 직접 만들고 임포트). 파인더로 만든 폴더도 인식되게.
     private static void EnsureFolderPath(string folder)
     {
-        if (AssetDatabase.IsValidFolder(folder)) return;
-        string parent = Path.GetDirectoryName(folder).Replace("\\", "/");
-        string name = Path.GetFileName(folder);
-        if (!AssetDatabase.IsValidFolder(parent)) EnsureFolderPath(parent);
-        AssetDatabase.CreateFolder(parent, name);
+        Directory.CreateDirectory(folder); // 프로젝트 루트 기준 상대경로
     }
 
     private static void AddSceneToBuildSettings(string path)
