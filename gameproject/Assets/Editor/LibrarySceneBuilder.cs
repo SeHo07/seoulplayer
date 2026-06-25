@@ -13,18 +13,20 @@ using UnityEngine.UI;
 // 진짜 에셋은 나중에 04_Sprites 의 스프라이트만 교체하면 된다.
 public static class LibrarySceneBuilder
 {
-    private const string SpriteDir = "Assets/04_Sprites/_Placeholder";
-    private const string DataDir = "Assets/09_Data/_Generated";
-    private const string PrefabPath = "Assets/03_Prefabs/BookButton.prefab";
-    private const string ScenePath = "Assets/01_Scenes/LibraryGame.unity";
+    private const string GameDir = "Assets/Games/별마당도서관";
+    private const string SpriteDir = GameDir + "/Sprites/_Placeholder";
+    private const string DataDir = GameDir + "/Data/_Generated";
+    private const string PrefabPath = GameDir + "/Prefabs/BookButton.prefab";
+    private const string ScenePath = GameDir + "/Scenes/LibraryGame.unity";
 
     [MenuItem("별마당도서관/플레이 가능한 씬 생성")]
     public static void Build()
     {
-        EnsureFolder("Assets/04_Sprites", "_Placeholder");
-        EnsureFolder("Assets/09_Data", "_Generated");
-        EnsureFolder("Assets", "03_Prefabs");
-        EnsureFolder("Assets", "01_Scenes");
+        EnsureFolderPath(SpriteDir);
+        EnsureFolderPath(DataDir);
+        EnsureFolderPath(GameDir + "/Prefabs");
+        EnsureFolderPath(GameDir + "/Scenes");
+        AssetDatabase.Refresh(); // 새 폴더를 Unity가 인식하도록
 
         // 1) 임시 스프라이트 생성
         Sprite playerSprite = MakeSprite("player", 48, 48, "#3f7bd6", "#274f8a");
@@ -362,6 +364,12 @@ public static class LibrarySceneBuilder
     {
         if (!AssetDatabase.IsValidFolder($"{parent}/{child}"))
             AssetDatabase.CreateFolder(parent, child);
+    }
+
+    // 중첩 경로 폴더 생성(디스크에 직접 만들고 임포트). 파인더로 만든 폴더도 인식되게.
+    private static void EnsureFolderPath(string folder)
+    {
+        Directory.CreateDirectory(folder); // 프로젝트 루트 기준 상대경로
     }
 
     private static void AddSceneToBuildSettings(string path)
