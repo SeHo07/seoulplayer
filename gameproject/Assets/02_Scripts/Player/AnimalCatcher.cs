@@ -16,11 +16,20 @@ public class AnimalCatcher : MonoBehaviour
     private Animal locked;
     private SpriteRenderer sr;
     private float groundY;
+    private float minX = float.NegativeInfinity;
+    private float maxX = float.PositiveInfinity;
 
     private void Awake()
     {
         sr = GetComponent<SpriteRenderer>();
         groundY = transform.position.y;
+    }
+
+    // 배경 밖으로 못 나가게 좌우 이동 한계 설정
+    public void SetBounds(float min, float max)
+    {
+        minX = min;
+        maxX = max;
     }
 
     private void Update()
@@ -43,6 +52,7 @@ public class AnimalCatcher : MonoBehaviour
 
         Vector3 p = transform.position;
         p.x += x * moveSpeed * Time.deltaTime;
+        p.x = Mathf.Clamp(p.x, minX, maxX);
         p.y = groundY;
         transform.position = p;
 

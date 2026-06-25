@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using TMPro;
 using UnityEditor;
+using UnityEditor.Events;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -59,8 +60,8 @@ public static class ParkSceneBuilder
             cam.backgroundColor = new Color(0.62f, 0.82f, 0.95f);
         }
 
-        // 플레이 가능한 바닥 영역(배경 아래쪽 길 부근)
-        float playY = -halfH + bgH * 0.22f;
+        // 플레이 가능한 바닥 영역(배경 아래쪽 길 부근) - 값을 낮춰 길에 가깝게
+        float playY = -halfH + bgH * 0.08f;
         float leftEdge = -halfW + 1.5f;
         float rightEdge = halfW - 1.5f;
 
@@ -80,7 +81,8 @@ public static class ParkSceneBuilder
         var psr = player.AddComponent<SpriteRenderer>();
         psr.sprite = playerS;
         psr.sortingOrder = 2;
-        player.AddComponent<AnimalCatcher>();
+        var catcher = player.AddComponent<AnimalCatcher>();
+        catcher.SetBounds(leftEdge, rightEdge); // 배경 밖으로 못 나가게
 
         // 카메라가 플레이어를 좌우로 따라가도록
         if (cam != null)
@@ -119,6 +121,11 @@ public static class ParkSceneBuilder
         MakeText("Hint", canvasGO.transform, "← → (A/D) 이동 · 가까운 동물에 Space 꾹 눌러 꼬시기", 30, TextAlignmentOptions.Bottom,
             new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 30), new Vector2(960, 50), new Color(0.1f, 0.1f, 0.1f));
 
+        // HUD 다시하기 버튼(상단 중앙)
+        var hudRestart = MakeButton("RestartButton", canvasGO.transform, "다시하기", new Color(0.22f, 0.45f, 0.7f, 0.95f),
+            new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -28), new Vector2(180, 60));
+        UnityEventTools.AddPersistentListener(hudRestart.GetComponent<Button>().onClick, gm.Restart);
+
         var ending = MakePanel("EndingTransition", canvasGO.transform, new Color(0f, 0f, 0f, 0.6f),
             Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
         MakeText("Label", ending.transform, "동물들을 우리로 데려다 주는 중...", 50, TextAlignmentOptions.Center,
@@ -130,6 +137,11 @@ public static class ParkSceneBuilder
             new Vector2(0, 0.5f), new Vector2(1, 1), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, Color.white);
         var clearTime = MakeText("ClearTime", clearPanel.transform, "클리어 시간: 0.0초", 44, TextAlignmentOptions.Center,
             new Vector2(0, 0), new Vector2(1, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, Color.white);
+
+        // 클리어 화면 다시하기 버튼
+        var clearRestart = MakeButton("RestartButton", clearPanel.transform, "다시하기", new Color(0.2f, 0.55f, 0.32f, 1f),
+            new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 130), new Vector2(280, 84));
+        UnityEventTools.AddPersistentListener(clearRestart.GetComponent<Button>().onClick, gm.Restart);
 
         var uiGO = new GameObject("ParkUIManager");
         var ui = uiGO.AddComponent<ParkUIManager>();
@@ -198,6 +210,18 @@ public static class ParkSceneBuilder
         go.transform.SetParent(parent, false);
         SetRect(go, aMin, aMax, pivot, pos, size);
         go.GetComponent<Image>().color = color;
+        return go;
+    }
+
+    private static GameObject MakeButton(string name, Transform parent, string label, Color color,
+        Vector2 aMin, Vector2 aMax, Vector2 pivot, Vector2 pos, Vector2 size)
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
+        go.transform.SetParent(parent, false);
+        SetRect(go, aMin, aMax, pivot, pos, size);
+        go.GetComponent<Image>().color = color;
+        MakeText("Label", go.transform, label, 30, TextAlignmentOptions.Center,
+            Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, Color.white);
         return go;
     }
 

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 // 서울대공원(동물꼬시기) 진행 관리: 잡은 동물 수, 경과 시간(랭킹용),
 // 전부 잡으면 엔딩(동물들이 우리로 복귀) 연출 후 클리어.
@@ -37,6 +38,13 @@ public class ParkGameManager : MonoBehaviour
         if (!IsPlaying) return;
         Elapsed += Time.deltaTime;
         ParkUIManager.Instance?.UpdateTimer(Elapsed);
+    }
+
+    // 다시하기: 현재 씬을 다시 로드
+    public void Restart()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     public Animal GetNearestFreeAnimal(Vector3 from, float range)
