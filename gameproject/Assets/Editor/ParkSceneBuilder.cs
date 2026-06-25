@@ -32,7 +32,7 @@ public static class ParkSceneBuilder
         Sprite zoneS = MakeRoundedFill("timing_zone", 144, 102, "#5fd06a", SpriteAlignment.Center, 300f);
         Sprite markerS = MakeRoundedFill("timing_marker", 42, 150, "#ff5a5a", SpriteAlignment.Center, 300f);
         Sprite mashFillS = MakeRoundedFill("mash_fill", 450, 72, "#ff9a3c", SpriteAlignment.LeftCenter, 300f);
-        Sprite arrowS = MakeTriangle("arrow_tri", 96, "#ffffff", 280f);
+        Sprite arrowS = MakeTriangle("arrow_tri", 96, "#ffffff", "#222222", 9f, 280f);
 
         // 실제 동물 이미지 (Assets/04_Sprites/Animals/*.png)
         var animals = new (string name, string file)[]
@@ -172,63 +172,65 @@ public static class ParkSceneBuilder
         var howTo = MakePanel("HowToPanel", canvasGO.transform, new Color(0f, 0f, 0f, 0.62f),
             Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
         var htCard = MakeSliced("Card", howTo.transform, round, new Color(0.99f, 0.97f, 0.90f, 1f),
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1000, 720));
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1040, 760));
         Color brown = new Color(0.27f, 0.23f, 0.18f);
         Color green = new Color(0.16f, 0.46f, 0.26f);
+        Color zoneG = new Color(0.37f, 0.81f, 0.45f);
+        Color markR = new Color(1f, 0.35f, 0.35f);
         Vector2 C = new Vector2(0.5f, 0.5f);
 
         var slideList = new Object[5];
 
-        // 0) 개요
+        // 0) 개요 (긴 본문 - 위에서 정렬, 그림 없음)
         var s0 = MakeSlide(htCard.transform, "동물꼬시기", green,
             "서울어린이대공원에서 탈출한 동물들을 다시 우리로 보내자!\n\n" +
             "· ← → (또는 A / D) 로 좌우 이동\n" +
             "· 동물 가까이서 Space 를 길게 눌러 충전 → 록온\n" +
-            "· 떼면 미니게임이 랜덤으로 등장 (▶ 로 넘겨보세요)\n" +
+            "· 떼면 미니게임이 랜덤 등장 (다음 으로 넘겨보세요)\n" +
             "· 성공하면 따라오고, 실패하면 잠깐 도망가요\n" +
             "· 동물을 모을수록 미니게임이 어려워져요\n\n" +
-            "모든 동물을 모으면 클리어! (걸린 시간 기록)", brown);
+            "모든 동물을 모으면 클리어! (걸린 시간 기록)", brown, 30f, 380f, 28f, TextAlignmentOptions.TopLeft);
         slideList[0] = s0;
 
         // 1) 타이밍
         var s1 = MakeSlide(htCard.transform, "① 타이밍", green,
-            "빨간 마커가 좌우로 움직여요.\n초록 구간에 왔을 때 Space 를 누르세요!", brown);
+            "빨간 마커가 좌우로 움직여요.\n초록 구간에 왔을 때 Space 를 누르세요!", brown, 150f, 96f, 30f, TextAlignmentOptions.Center);
         IllustBar(s1.transform, round);
-        MakeSliced("Zone", s1.transform, round, new Color(0.37f, 0.81f, 0.45f), C, C, C, new Vector2(0, -70), new Vector2(150, 66));
-        MakeSliced("Marker", s1.transform, round, new Color(1f, 0.35f, 0.35f), C, C, C, new Vector2(0, -70), new Vector2(18, 96));
+        MakeSliced("Zone", s1.transform, round, zoneG, C, C, C, new Vector2(0, -40), new Vector2(150, 66));
+        MakeSliced("Marker", s1.transform, round, markR, C, C, C, new Vector2(0, -40), new Vector2(18, 96));
         slideList[1] = s1;
 
         // 2) 움직이는 초록칸
         var s2 = MakeSlide(htCard.transform, "② 움직이는 초록칸", green,
-            "마커는 가운데 고정! 초록칸이 움직여요.\n초록칸이 가운데 마커에 올 때 Space!", brown);
+            "마커는 가운데 고정! 초록칸이 움직여요.\n초록칸이 가운데 마커에 올 때 Space!", brown, 150f, 96f, 30f, TextAlignmentOptions.Center);
         IllustBar(s2.transform, round);
-        MakeSliced("Zone", s2.transform, round, new Color(0.37f, 0.81f, 0.45f), C, C, C, new Vector2(-150, -70), new Vector2(150, 66));
-        MakeSliced("Marker", s2.transform, round, new Color(1f, 0.35f, 0.35f), C, C, C, new Vector2(0, -70), new Vector2(18, 96));
+        MakeSliced("Zone", s2.transform, round, zoneG, C, C, C, new Vector2(-150, -40), new Vector2(150, 66));
+        MakeSliced("Marker", s2.transform, round, markR, C, C, C, new Vector2(0, -40), new Vector2(18, 96));
         slideList[2] = s2;
 
         // 3) 연타
         var s3 = MakeSlide(htCard.transform, "③ 연타", green,
-            "Space 를 빠르게 연타해서\n주황 게이지를 가득 채우세요! (안 누르면 줄어들어요)", brown);
+            "Space 를 빠르게 연타해서\n주황 게이지를 가득 채우세요! (안 누르면 줄어들어요)", brown, 150f, 96f, 30f, TextAlignmentOptions.Center);
         IllustBar(s3.transform, round);
-        MakeSliced("Fill", s3.transform, round, new Color(1f, 0.6f, 0.24f), C, C, C, new Vector2(-130, -70), new Vector2(320, 66));
+        MakeSliced("Fill", s3.transform, round, new Color(1f, 0.6f, 0.24f), C, C, C, new Vector2(-130, -40), new Vector2(320, 66));
         slideList[3] = s3;
 
         // 4) 방향키 순서
         var s4 = MakeSlide(htCard.transform, "④ 방향키 순서", green,
-            "화면에 뜬 화살표 순서대로\n방향키(↑ ↓ ← →)를 눌러요!", brown);
-        MakeText("Arrows", s4.transform, "↑   →   ↓   ←", 70, TextAlignmentOptions.Center,
-            C, C, C, new Vector2(0, -70), new Vector2(740, 130), green);
+            "화면에 뜬 화살표 순서대로\n방향키(↑ ↓ ← →)를 눌러요!", brown, 150f, 96f, 30f, TextAlignmentOptions.Center);
+        MakeText("Arrows", s4.transform, "↑    →    ↓    ←", 70, TextAlignmentOptions.Center,
+            C, C, C, new Vector2(0, -50), new Vector2(760, 140), green);
         slideList[4] = s4;
 
-        // 카운터 + 네비게이션 버튼
-        var counter = MakeText("Counter", htCard.transform, "1 / 5", 30, TextAlignmentOptions.Center,
-            C, C, C, new Vector2(0, -228), new Vector2(220, 50), brown);
+        // 카운터(하단) + 버튼 한 줄(이전 / 게임시작 / 다음)
+        var counter = MakeText("Counter", htCard.transform, "1 / 5", 28, TextAlignmentOptions.Center,
+            C, C, C, new Vector2(0, -232), new Vector2(220, 46), brown);
         var prevBtn = MakePrettyButton("PrevButton", htCard.transform, round, "이전",
-            new Color(0.55f, 0.55f, 0.58f, 1f), C, C, C, new Vector2(-410, -30), new Vector2(130, 84));
-        var nextBtn = MakePrettyButton("NextButton", htCard.transform, round, "다음",
-            new Color(0.32f, 0.56f, 0.86f, 1f), C, C, C, new Vector2(410, -30), new Vector2(130, 84));
+            new Color(0.55f, 0.55f, 0.58f, 1f), C, C, C, new Vector2(-360, -312), new Vector2(150, 84));
         var startBtn = MakePrettyButton("StartButton", htCard.transform, round, "게임 시작",
-            new Color(0.30f, 0.62f, 0.36f, 1f), C, C, C, new Vector2(0, -300), new Vector2(340, 92));
+            new Color(0.30f, 0.62f, 0.36f, 1f), C, C, C, new Vector2(0, -312), new Vector2(300, 92));
+        var nextBtn = MakePrettyButton("NextButton", htCard.transform, round, "다음",
+            new Color(0.32f, 0.56f, 0.86f, 1f), C, C, C, new Vector2(360, -312), new Vector2(150, 84));
 
         var slidesComp = howTo.AddComponent<HowToSlides>();
         SetArray(slidesComp, "slides", slideList);
@@ -372,16 +374,17 @@ public static class ParkSceneBuilder
     }
 
     // 슬라이드 한 장(제목 + 설명). 그림은 호출 측에서 추가.
-    private static GameObject MakeSlide(Transform parent, string title, Color titleColor, string body, Color bodyColor)
+    private static GameObject MakeSlide(Transform parent, string title, Color titleColor,
+        string body, Color bodyColor, float bodyY, float bodyH, float bodyFont, TextAlignmentOptions bodyAlign)
     {
         Vector2 C = new Vector2(0.5f, 0.5f);
         var s = new GameObject("Slide", typeof(RectTransform));
         s.transform.SetParent(parent, false);
-        SetRect(s, C, C, C, Vector2.zero, new Vector2(1000, 720));
-        MakeText("Title", s.transform, title, 50, TextAlignmentOptions.Center,
-            C, C, C, new Vector2(0, 288), new Vector2(900, 90), titleColor);
-        MakeText("Body", s.transform, body, 28, TextAlignmentOptions.Center,
-            C, C, C, new Vector2(0, 130), new Vector2(880, 240), bodyColor);
+        SetRect(s, C, C, C, Vector2.zero, new Vector2(1040, 760));
+        MakeText("Title", s.transform, title, 46, TextAlignmentOptions.Center,
+            C, C, C, new Vector2(0, 300), new Vector2(940, 80), titleColor);
+        MakeText("Body", s.transform, body, bodyFont, bodyAlign,
+            C, C, C, new Vector2(0, bodyY), new Vector2(820, bodyH), bodyColor);
         return s;
     }
 
@@ -389,7 +392,7 @@ public static class ParkSceneBuilder
     {
         Vector2 C = new Vector2(0.5f, 0.5f);
         MakeSliced("Bar", slide, round, new Color(0.16f, 0.17f, 0.21f, 1f),
-            C, C, C, new Vector2(0, -70), new Vector2(560, 66));
+            C, C, C, new Vector2(0, -40), new Vector2(560, 66));
     }
 
     private static Image MakeSliced(string name, Transform parent, Sprite sprite, Color color,
@@ -532,24 +535,38 @@ public static class ParkSceneBuilder
         return AssetDatabase.LoadAssetAtPath<Sprite>(path);
     }
 
-    // 위쪽을 향한 삼각형(화살표용) - 회전해서 4방향으로 사용
-    private static Sprite MakeTriangle(string name, int size, string fillHex, float ppu)
+    // 위쪽을 향한 삼각형(화살표용) - 어두운 윤곽선 포함. 회전해서 4방향으로 사용
+    private static Sprite MakeTriangle(string name, int size, string fillHex, string outlineHex, float outlinePx, float ppu)
     {
         string path = $"{SpriteDir}/{name}.png";
         ColorUtility.TryParseHtmlString(fillHex, out Color fill);
+        ColorUtility.TryParseHtmlString(outlineHex, out Color outline);
         var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
         var px = new Color[size * size];
-        float ax = size * 0.5f, ay = size - 2f; // top
-        float bx = 2f, by = 2f;                  // bottom-left
-        float cx = size - 2f, cy = 2f;           // bottom-right
+        float m = outlinePx + 2f;
+        float ax = size * 0.5f, ay = size - m; // top
+        float bx = m, by = m;                  // bottom-left
+        float cx = size - m, cy = m;           // bottom-right
         for (int y = 0; y < size; y++)
             for (int x = 0; x < size; x++)
             {
-                float cov = 0f;
+                float fillCov = 0f, lineCov = 0f;
                 for (int sy = 0; sy < 2; sy++)
                     for (int sx = 0; sx < 2; sx++)
-                        if (PointInTri(x + 0.25f + sx * 0.5f, y + 0.25f + sy * 0.5f, ax, ay, bx, by, cx, cy)) cov += 0.25f;
-                px[y * size + x] = new Color(fill.r, fill.g, fill.b, cov);
+                    {
+                        float pxs = x + 0.25f + sx * 0.5f, pys = y + 0.25f + sy * 0.5f;
+                        if (!PointInTri(pxs, pys, ax, ay, bx, by, cx, cy)) continue;
+                        float d = Mathf.Min(EdgeDist(pxs, pys, ax, ay, bx, by),
+                                  Mathf.Min(EdgeDist(pxs, pys, bx, by, cx, cy), EdgeDist(pxs, pys, cx, cy, ax, ay)));
+                        if (d < outlinePx) lineCov += 0.25f; else fillCov += 0.25f;
+                    }
+                float total = fillCov + lineCov;
+                if (total > 0f)
+                {
+                    Color c = (fill * fillCov + outline * lineCov) / total;
+                    px[y * size + x] = new Color(c.r, c.g, c.b, total);
+                }
+                else px[y * size + x] = new Color(fill.r, fill.g, fill.b, 0f);
             }
         tex.SetPixels(px);
         tex.Apply();
@@ -557,6 +574,13 @@ public static class ParkSceneBuilder
         Object.DestroyImmediate(tex);
         ApplySpriteImport(path, SpriteAlignment.Center, ppu);
         return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+    }
+
+    private static float EdgeDist(float px, float py, float ax, float ay, float bx, float by)
+    {
+        float cross = Mathf.Abs((px - bx) * (ay - by) - (ax - bx) * (py - by));
+        float len = Mathf.Sqrt((ax - bx) * (ax - bx) + (ay - by) * (ay - by));
+        return len < 0.001f ? 999f : cross / len;
     }
 
     private static bool PointInTri(float px, float py, float ax, float ay, float bx, float by, float cx, float cy)
