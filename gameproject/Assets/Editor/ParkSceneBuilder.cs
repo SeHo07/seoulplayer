@@ -170,9 +170,11 @@ public static class ParkSceneBuilder
         var howTo = MakePanel("HowToPanel", canvasGO.transform, new Color(0f, 0f, 0f, 0.62f),
             Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
         var htCard = MakeSliced("Card", howTo.transform, round, new Color(0.99f, 0.97f, 0.90f, 1f),
-            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(940, 600));
-        MakeText("Title", htCard.transform, "동물꼬시기 — 게임 방법", 56, TextAlignmentOptions.Center,
-            new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(0, -46), new Vector2(0, 100), new Color(0.16f, 0.46f, 0.26f));
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(960, 680));
+        // 제목(상단 고정 박스)
+        MakeText("Title", htCard.transform, "동물꼬시기 — 게임 방법", 52, TextAlignmentOptions.Center,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 268), new Vector2(900, 90), new Color(0.16f, 0.46f, 0.26f));
+        // 본문(가운데 고정 박스, 제목/버튼과 겹치지 않음)
         MakeText("Body", htCard.transform,
             "서울어린이대공원에서 탈출한 동물들을 다시 우리로!\n\n" +
             "· ← → (또는 A / D) 로 좌우 이동\n" +
@@ -181,11 +183,12 @@ public static class ParkSceneBuilder
             "· 빨간 마커가 초록 구간일 때 Space! → 성공하면 따라옴\n" +
             "· 타이밍 실패 시 동물이 잠깐 도망가요\n\n" +
             "모든 동물을 모으면 클리어! (걸린 시간 기록)",
-            32, TextAlignmentOptions.TopLeft,
-            new Vector2(0, 0), new Vector2(1, 1), new Vector2(0.5f, 0.5f), new Vector2(0, 20), new Vector2(-100, -220), new Color(0.25f, 0.22f, 0.18f));
+            30, TextAlignmentOptions.TopLeft,
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 10), new Vector2(840, 380), new Color(0.25f, 0.22f, 0.18f));
+        // 시작 버튼(하단 고정)
         var startBtn = MakePrettyButton("StartButton", htCard.transform, round, "게임 시작",
             new Color(0.30f, 0.62f, 0.36f, 1f),
-            new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 46), new Vector2(320, 96));
+            new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -278), new Vector2(340, 96));
         UnityEventTools.AddPersistentListener(startBtn.GetComponent<Button>().onClick, ui.CloseHowToAndStart);
         SetRef(ui, "howToPanel", howTo);
 
@@ -362,17 +365,24 @@ public static class ParkSceneBuilder
     {
         string path = $"{SpriteDir}/{name}.png";
         ColorUtility.TryParseHtmlString(fillHex, out Color fill);
-        Color clear = new Color(fill.r, fill.g, fill.b, 0f);
-        int r = Mathf.Min(w, h) / 2;
+        float r = Mathf.Min(w, h) * 0.5f;
         var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
         var px = new Color[w * h];
         for (int y = 0; y < h; y++)
             for (int x = 0; x < w; x++)
             {
-                float cx = Mathf.Clamp(x, r, w - 1 - r);
-                float cy = Mathf.Clamp(y, r, h - 1 - r);
-                float dx = x - cx, dy = y - cy;
-                px[y * w + x] = (dx * dx + dy * dy <= (float)r * r) ? fill : clear;
+                float cov = 0f; // 2x2 슈퍼샘플 AA
+                for (int sy = 0; sy < 2; sy++)
+                    for (int sx = 0; sx < 2; sx++)
+                    {
+                        float px2 = x + 0.25f + sx * 0.5f;
+                        float py2 = y + 0.25f + sy * 0.5f;
+                        float cx = Mathf.Clamp(px2, r, w - r);
+                        float cy = Mathf.Clamp(py2, r, h - r);
+                        float dx = px2 - cx, dy = py2 - cy;
+                        if (dx * dx + dy * dy <= r * r) cov += 0.25f;
+                    }
+                px[y * w + x] = new Color(fill.r, fill.g, fill.b, fill.a * cov);
             }
         tex.SetPixels(px);
         tex.Apply();
@@ -387,7 +397,6 @@ public static class ParkSceneBuilder
     {
         string path = $"{SpriteDir}/{name}.png";
         ColorUtility.TryParseHtmlString(fillHex, out Color fill);
-        Color clear = new Color(fill.r, fill.g, fill.b, 0f);
         var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
         var px = new Color[size * size];
         float c = (size - 1) * 0.5f;
@@ -396,9 +405,16 @@ public static class ParkSceneBuilder
         for (int y = 0; y < size; y++)
             for (int x = 0; x < size; x++)
             {
-                float dx = x - c, dy = y - c;
-                float d = Mathf.Sqrt(dx * dx + dy * dy);
-                px[y * size + x] = (d <= outer && d >= inner) ? fill : clear;
+                float cov = 0f; // 2x2 슈퍼샘플 AA
+                for (int sy = 0; sy < 2; sy++)
+                    for (int sx = 0; sx < 2; sx++)
+                    {
+                        float dx = (x + 0.25f + sx * 0.5f) - c;
+                        float dy = (y + 0.25f + sy * 0.5f) - c;
+                        float d = Mathf.Sqrt(dx * dx + dy * dy);
+                        if (d <= outer && d >= inner) cov += 0.25f;
+                    }
+                px[y * size + x] = new Color(fill.r, fill.g, fill.b, fill.a * cov);
             }
         tex.SetPixels(px);
         tex.Apply();
@@ -418,6 +434,7 @@ public static class ParkSceneBuilder
         imp.spritePixelsPerUnit = 100;
         imp.filterMode = FilterMode.Bilinear;
         imp.mipmapEnabled = false;
+        imp.textureCompression = TextureImporterCompression.Uncompressed; // 압축 아티팩트 방지
         var s = new TextureImporterSettings();
         imp.ReadTextureSettings(s);
         s.spriteAlignment = (int)align;

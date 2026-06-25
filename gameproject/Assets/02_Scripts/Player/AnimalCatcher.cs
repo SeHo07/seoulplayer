@@ -16,8 +16,8 @@ public class AnimalCatcher : MonoBehaviour
     private Animal locked;
     private SpriteRenderer sr;
     private float groundY;
-    private float minX = float.NegativeInfinity;
-    private float maxX = float.PositiveInfinity;
+    [SerializeField] private float minX = -10000f;
+    [SerializeField] private float maxX = 10000f;
 
     private enum Phase { Idle, Charging, Locked, Timing }
     private Phase phase = Phase.Idle;
