@@ -3,13 +3,14 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-// 08_Fonts/NotoSansKR-Regular.ttf 를 TMP 폰트(Dynamic)로 변환하고,
+// NotoSansKR-Regular.ttf 를 TMP 폰트(Dynamic)로 변환하고,
 // TMP 기본 폰트로 지정 + 현재 씬의 모든 TMP 텍스트에 적용한다.
 // → 한글 깨짐(□) 해결. TMP Essentials를 먼저 Import 한 상태여야 함.
 public static class KoreanFontSetup
 {
-    private const string TtfPath = "Assets/08_Fonts/NotoSansKR-Regular.ttf";
-    private const string FontAssetPath = "Assets/08_Fonts/NotoSansKR SDF.asset";
+    private const string FontDir = "Assets/Games/_공통/Fonts";
+    private const string TtfPath = FontDir + "/NotoSansKR-Regular.ttf";
+    private const string FontAssetPath = FontDir + "/NotoSansKR SDF.asset";
 
     [MenuItem("서울플레이업/한글 폰트 적용")]
     public static void Apply()
