@@ -28,11 +28,13 @@ public static class LibraryExploreBuilder
         if (pngImp != null) { pngImp.textureType = TextureImporterType.Default; pngImp.SaveAndReimport(); }
         var shelfTex = AssetDatabase.LoadAssetAtPath<Texture2D>(ShelfPng);
 
-        // FBX: 콜라이더 생성
+        // FBX: 콜라이더 + 임베드 재질로 강제(예전 External 설정 덮어써서 경고/흰색 제거)
         var fbxImp = AssetImporter.GetAtPath(FbxPath) as ModelImporter;
-        if (fbxImp != null && !fbxImp.addCollider)
+        if (fbxImp != null)
         {
             fbxImp.addCollider = true;
+            fbxImp.materialImportMode = ModelImporterMaterialImportMode.ImportStandard;
+            fbxImp.materialLocation = ModelImporterMaterialLocation.InPrefab;
             fbxImp.SaveAndReimport();
         }
 
@@ -58,12 +60,13 @@ public static class LibraryExploreBuilder
         {
             var inst = (GameObject)PrefabUtility.InstantiatePrefab(fbx);
             inst.name = "BookWall";
-            inst.transform.position = new Vector3(0f, 0f, 6f);
+            inst.transform.position = new Vector3(0f, 0f, 12f);
+            inst.transform.localScale = Vector3.one * 5f; // 모델이 작으면 키움(인스펙터에서 조정)
             FixToURP(inst); // 재질을 URP로 변환(분홍/안보임 방지)
-            // 상호작용 트리거(모델 앞, 크게)
+            // 상호작용 트리거(모델 둘레 크게)
             var zone = new GameObject("InteractZone");
-            zone.transform.position = new Vector3(0f, 1f, 4f);
-            var bc = zone.AddComponent<BoxCollider>(); bc.isTrigger = true; bc.size = new Vector3(14f, 4f, 4f);
+            zone.transform.position = new Vector3(0f, 2f, 9f);
+            var bc = zone.AddComponent<BoxCollider>(); bc.isTrigger = true; bc.size = new Vector3(40f, 12f, 20f);
             zone.AddComponent<InteractZone>();
         }
 
@@ -87,6 +90,7 @@ public static class LibraryExploreBuilder
         if (cam == null) { var camGO = new GameObject("Main Camera"); cam = camGO.AddComponent<Camera>(); camGO.tag = "MainCamera"; }
         var follow = cam.gameObject.AddComponent<IsoCameraFollow>();
         SetRef(follow, "target", player.transform);
+        SetVector(follow, "offset", new Vector3(0f, 18f, -18f)); // 큰 공간이라 멀리서
 
         // ===== 책찾기 UI =====
         var canvasGO = new GameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
@@ -234,6 +238,13 @@ public static class LibraryExploreBuilder
         var sp = so.FindProperty(field);
         if (sp != null) { sp.objectReferenceValue = value; so.ApplyModifiedPropertiesWithoutUndo(); }
         else Debug.LogWarning($"[LibraryExploreBuilder] 필드 없음: {comp.GetType().Name}.{field}");
+    }
+
+    private static void SetVector(Object comp, string field, Vector3 v)
+    {
+        var so = new SerializedObject(comp);
+        var sp = so.FindProperty(field);
+        if (sp != null) { sp.vector3Value = v; so.ApplyModifiedPropertiesWithoutUndo(); }
     }
 
     private static void AddSceneToBuild(string path)
