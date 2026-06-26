@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(CharacterController))]
 public class LibraryExplorer : MonoBehaviour
 {
-    [SerializeField] private float moveSpeed = 4f;
+    [SerializeField] private float moveSpeed = 8f;
     [SerializeField] private float gravity = -20f;
     [SerializeField] private float rotateSpeed = 12f;
     [Tooltip("이동 방향 기준 카메라(보통 Main Camera). 비우면 월드축 기준.")]
