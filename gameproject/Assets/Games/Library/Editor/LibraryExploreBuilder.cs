@@ -27,6 +27,9 @@ public static class LibraryExploreBuilder
         var pngImp = AssetImporter.GetAtPath(ShelfPng) as TextureImporter;
         if (pngImp != null) { pngImp.textureType = TextureImporterType.Default; pngImp.SaveAndReimport(); }
         var shelfTex = AssetDatabase.LoadAssetAtPath<Texture2D>(ShelfPng);
+        if (shelfTex == null)
+            Debug.LogError("[LibraryExploreBuilder] 책장 이미지를 못 불러왔습니다: " + ShelfPng +
+                "\n→ 파일이 실제 이미지인지(LFS 포인터 아님), 경로가 맞는지 확인하세요. (책찾기 화면이 빈칸으로 보입니다)");
 
         // FBX: 콜라이더 + 임베드 재질로 강제(예전 External 설정 덮어써서 경고/흰색 제거)
         var fbxImp = AssetImporter.GetAtPath(FbxPath) as ModelImporter;
@@ -69,6 +72,7 @@ public static class LibraryExploreBuilder
             {
                 var inst = (GameObject)PrefabUtility.InstantiatePrefab(fbx);
                 inst.name = "BookWall";
+                inst.transform.rotation = Quaternion.Euler(0f, 180f, 0f); // 앞뒤 뒤집힘 보정(필요시 인스펙터에서 Y회전 조정)
                 FixToURP(inst);
 
                 var rends = inst.GetComponentsInChildren<Renderer>();
@@ -204,7 +208,7 @@ public static class LibraryExploreBuilder
             {
                 var m = src[i];
                 if (m == null) { dst[i] = null; continue; }
-                if (m.shader != null && m.shader.name.Contains("Universal")) { dst[i] = m; continue; }
+                if (m.shader != null && m.shader.name.Contains("Unlit")) { dst[i] = m; continue; } // 이미 Unlit이면 통과, URP/Lit는 Unlit으로 변환(밝게)
                 if (!cache.TryGetValue(m, out var nm))
                 {
                     nm = new Material(urp);
