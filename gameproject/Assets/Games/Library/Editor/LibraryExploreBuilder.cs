@@ -60,13 +60,13 @@ public static class LibraryExploreBuilder
         {
             var inst = (GameObject)PrefabUtility.InstantiatePrefab(fbx);
             inst.name = "BookWall";
-            inst.transform.position = new Vector3(0f, 0f, 12f);
-            inst.transform.localScale = Vector3.one * 5f; // 모델이 작으면 키움(인스펙터에서 조정)
-            FixToURP(inst); // 재질을 URP로 변환(분홍/안보임 방지)
-            // 상호작용 트리거(모델 둘레 크게)
+            inst.transform.position = new Vector3(0f, 0f, 16f);
+            inst.transform.localScale = Vector3.one * 12f; // 도서관을 크게(플레이어보다 훨씬 크게). 더 크/작게는 인스펙터에서
+            FixToURP(inst); // 재질을 URP로
+            // 상호작용 영역(모델 둘레 크게, 트리거라 안 막음)
             var zone = new GameObject("InteractZone");
-            zone.transform.position = new Vector3(0f, 2f, 9f);
-            var bc = zone.AddComponent<BoxCollider>(); bc.isTrigger = true; bc.size = new Vector3(40f, 12f, 20f);
+            zone.transform.position = new Vector3(0f, 4f, 12f);
+            var bc = zone.AddComponent<BoxCollider>(); bc.isTrigger = true; bc.size = new Vector3(70f, 20f, 40f);
             zone.AddComponent<InteractZone>();
         }
 
@@ -81,16 +81,14 @@ public static class LibraryExploreBuilder
         Object.DestroyImmediate(body.GetComponent<Collider>());
         var explorer = player.AddComponent<LibraryExplorer>();
         var interact = player.AddComponent<LibraryInteract>();
-        // 상호작용 감지용 트리거 + 키네마틱 리지드바디
-        var trig = player.AddComponent<SphereCollider>(); trig.isTrigger = true; trig.radius = 1.8f; trig.center = new Vector3(0f, 1f, 0f);
-        var rb = player.AddComponent<Rigidbody>(); rb.isKinematic = true; rb.useGravity = false;
+        // (상호작용은 거리기반이라 별도 트리거/리지드바디 불필요)
 
         // 카메라
         var cam = Camera.main;
         if (cam == null) { var camGO = new GameObject("Main Camera"); cam = camGO.AddComponent<Camera>(); camGO.tag = "MainCamera"; }
         var follow = cam.gameObject.AddComponent<IsoCameraFollow>();
         SetRef(follow, "target", player.transform);
-        SetVector(follow, "offset", new Vector3(0f, 18f, -18f)); // 큰 공간이라 멀리서
+        SetVector(follow, "offset", new Vector3(0f, 24f, -24f)); // 큰 도서관이라 멀리서
 
         // ===== 책찾기 UI =====
         var canvasGO = new GameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
@@ -102,7 +100,7 @@ public static class LibraryExploreBuilder
         // "[E] 책 찾기" 안내
         var prompt = MakePanel("Prompt", canvasGO.transform, new Color(0, 0, 0, 0.6f),
             new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 60), new Vector2(320, 70));
-        MakeText("T", prompt.transform, "[ E ] 책 찾기", 34, Vector2.zero, Vector2.one, Color.white);
+        MakeText("T", prompt.transform, "[ F ] 책 찾기", 34, Vector2.zero, Vector2.one, Color.white);
 
         // FindScreen 패널
         var screen = MakePanel("FindScreen", canvasGO.transform, new Color(0.05f, 0.04f, 0.03f, 0.96f),
@@ -155,16 +153,17 @@ public static class LibraryExploreBuilder
 
         EditorUtility.DisplayDialog("완료",
             "별마당도서관 2.5D 씬 생성 완료!\n\n" +
-            "▶ Play → WASD 탐험 → 도서관 앞에서 E → 제한시간 내 책 많이 찾기\n\n" +
+            "▶ Play → WASD 탐험 → 도서관 앞에서 F → 제한시간 내 책 많이 찾기\n\n" +
             "· FBX(BookWall) 크기/위치가 안 맞으면 인스펙터 Scale/Position 조정\n" +
             "· 책 42칸 격자가 이미지와 안 맞으면 FindScreen의 Cabinets(좌/우 uv) 조정\n" +
             "· 재질이 분홍/안보이면: FBX 선택 > Materials > Extract, 또는 URP 변환", "확인");
     }
 
-    // FBX 재질이 URP에서 안 보이면, 텍스처를 가져와 새 URP/Lit 재질을 만들어 입힌다.
+    // FBX 재질을 URP/Unlit 으로 입힌다. (VARCO 텍스처는 조명이 구워져 있어 Unlit이 렌더와 비슷하게 밝음)
     private static void FixToURP(GameObject root)
     {
-        var urp = Shader.Find("Universal Render Pipeline/Lit");
+        var urp = Shader.Find("Universal Render Pipeline/Unlit");
+        if (urp == null) urp = Shader.Find("Universal Render Pipeline/Lit");
         if (urp == null) return;
         string matDir = GameDir + "/Materials";
         Directory.CreateDirectory(matDir);
