@@ -17,6 +17,7 @@ public static class LibraryExploreBuilder
     private const string FbxPath = GameDir + "/Models/MultiStoryBookWall.fbx";
     private const string ShelfPng = GameDir + "/Sprites/bookshelf.png";
     private const string ScenePath = GameDir + "/Scenes/LibraryExplore.unity";
+    private const string FindScreenPrefab = GameDir + "/Prefabs/FindScreen.prefab";
 
     [MenuItem("별마당도서관/플레이 가능한 씬 생성")]
     public static void Build()
@@ -169,59 +170,12 @@ public static class LibraryExploreBuilder
             new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 60), new Vector2(320, 70));
         MakeText("T", prompt.transform, "[ F ] 책 찾기", 34, Vector2.zero, Vector2.one, Color.white);
 
-        // FindScreen 패널
-        var screen = MakePanel("FindScreen", canvasGO.transform, new Color(0.05f, 0.04f, 0.03f, 0.96f),
-            Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
-
-        // 책장 이미지(가운데 크게) + 버튼 부모(같은 영역 덮기)
-        var shelfGO = new GameObject("ShelfImage", typeof(RectTransform), typeof(RawImage));
-        shelfGO.transform.SetParent(screen.transform, false);
-        SetRect(shelfGO, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -30), new Vector2(1280, 853));
-        var shelfRaw = shelfGO.GetComponent<RawImage>(); shelfRaw.texture = shelfTex;
-        var buttonsParent = new GameObject("Buttons", typeof(RectTransform));
-        buttonsParent.transform.SetParent(shelfGO.transform, false);
-        var bpRT = buttonsParent.GetComponent<RectTransform>();
-        bpRT.anchorMin = Vector2.zero; bpRT.anchorMax = Vector2.one; bpRT.offsetMin = Vector2.zero; bpRT.offsetMax = Vector2.zero;
-
-        // 안내문(좌상단 상태줄)
-        var info = MakeText("Info", screen.transform, "이 책을 찾으세요!", 36,
-            new Vector2(0, 1), new Vector2(1, 1), Color.white);
-        SetRect(info.gameObject, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(0, -40), new Vector2(-340, 70));
-        info.alignment = TextAlignmentOptions.Left;
-
-        // "찾을 책" 카드(우상단): 금색 테두리 + 어두운 속지 + 라벨 + 책 썸네일
-        var card = MakePanel("TargetCard", screen.transform, new Color(0.82f, 0.66f, 0.32f, 1f),
-            new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-40, -40), new Vector2(220, 330));
-        var inner = MakePanel("Inner", card.transform, new Color(0.10f, 0.09f, 0.07f, 1f),
-            Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
-        var innerRT = inner.GetComponent<RectTransform>();
-        innerRT.offsetMin = new Vector2(6, 6); innerRT.offsetMax = new Vector2(-6, -6); // 6px 금색 테두리
-        var cardLabel = MakeText("Label", inner.transform, "찾을 책", 32,
-            new Vector2(0, 1), new Vector2(1, 1), new Color(0.96f, 0.84f, 0.48f, 1f));
-        SetRect(cardLabel.gameObject, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(0, -10), new Vector2(0, 48));
-
-        var thumbGO = new GameObject("TargetThumb", typeof(RectTransform), typeof(RawImage), typeof(AspectRatioFitter));
-        thumbGO.transform.SetParent(inner.transform, false);
-        SetRect(thumbGO, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -26), new Vector2(88, 240));
-        thumbGO.GetComponent<RawImage>().raycastTarget = false;
-        var arf = thumbGO.GetComponent<AspectRatioFitter>();       // 높이 240 고정, 너비를 책 비율대로(찌그러짐 방지)
-        arf.aspectMode = AspectRatioFitter.AspectMode.HeightControlsWidth;
-        arf.aspectRatio = 0.37f;                                    // 첫 표시용 기본값(이후 FindBookScreen이 실제 비율로 갱신)
-
-        // 결과 패널(시간 종료 → 점수)
-        var resultP = MakePanel("ResultPanel", screen.transform, new Color(0.1f, 0.25f, 0.15f, 0.94f),
-            Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
-        var resultT = MakeText("T", resultP.transform, "결과", 72, Vector2.zero, Vector2.one, Color.white);
-        resultP.SetActive(false);
-
-        var find = screen.AddComponent<FindBookScreen>();
-        SetRef(find, "panel", screen);
-        SetRef(find, "shelfImage", shelfRaw);
-        SetRef(find, "buttonsParent", bpRT);
-        SetRef(find, "targetThumb", thumbGO.GetComponent<RawImage>());
-        SetRef(find, "infoText", info);
-        SetRef(find, "resultPanel", resultP);
-        SetRef(find, "resultText", resultT);
+        // FindScreen 프리팹: 없으면 만들고, 항상 '다시 플레이' 버튼이 있도록 보장(사용자 책칸 편집은 유지).
+        // 그 프리팹을 인스턴스화 → 사용자가 눈으로 편집한 책 칸이 그대로 반영됨.
+        EnsureFindScreenPrefab(shelfTex);
+        var screen = (GameObject)PrefabUtility.InstantiatePrefab(
+            AssetDatabase.LoadAssetAtPath<GameObject>(FindScreenPrefab), canvasGO.transform);
+        var find = screen.GetComponent<FindBookScreen>();
         screen.SetActive(false);
 
         // 플레이어 상호작용 연결
@@ -321,6 +275,125 @@ public static class LibraryExploreBuilder
             rend.sharedMaterials = dst;
         }
         AssetDatabase.SaveAssets();
+    }
+
+    // ---- 책찾기 화면(프리팹용) ----
+    // 프리팹이 없으면 기본형을 만들고, 항상 ResultPanel에 '다시 플레이' 버튼이 있도록 보장한다.
+    // (이미 있으면 책 칸 등 기존 편집을 건드리지 않고 버튼만 점검)
+    private static void EnsureFindScreenPrefab(Texture2D shelfTex)
+    {
+        // 1) 프리팹이 없으면 새로 만들어 저장
+        if (AssetDatabase.LoadAssetAtPath<GameObject>(FindScreenPrefab) == null)
+        {
+            var built = BuildFindScreen(null, shelfTex);
+            Directory.CreateDirectory(GameDir + "/Prefabs");
+            PrefabUtility.SaveAsPrefabAsset(built, FindScreenPrefab);
+            Object.DestroyImmediate(built);
+        }
+
+        // 2) '다시 플레이' 버튼이 없으면 추가(기존 편집 보존)
+        var root = PrefabUtility.LoadPrefabContents(FindScreenPrefab);
+        try
+        {
+            var find = root.GetComponent<FindBookScreen>();
+            var rp = root.transform.Find("ResultPanel");
+            if (find != null && rp != null && rp.Find("RestartButton") == null)
+            {
+                var round = MakeRoundedSprite("ui_round", 48, 16);
+                var replay = MakePrettyButton("RestartButton", rp, round, "다시 플레이",
+                    new Color(0.30f, 0.62f, 0.36f, 1f),
+                    new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, 120), new Vector2(360, 100));
+                UnityEventTools.AddPersistentListener(replay.GetComponent<Button>().onClick, find.Restart);
+                PrefabUtility.SaveAsPrefabAsset(root, FindScreenPrefab);
+            }
+        }
+        finally
+        {
+            PrefabUtility.UnloadPrefabContents(root);
+        }
+    }
+
+    // FindScreen 한 채를 통째로 만든다(책장 이미지 + 기본 책칸 42 + 찾을책 카드 + 안내 + 결과 + FindBookScreen).
+    private static GameObject BuildFindScreen(Transform parent, Texture2D shelfTex)
+    {
+        var screen = MakePanel("FindScreen", parent, new Color(0.05f, 0.04f, 0.03f, 0.96f),
+            Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+
+        // 책장 이미지 + 책칸 부모(같은 영역 덮기)
+        var shelfGO = new GameObject("ShelfImage", typeof(RectTransform), typeof(RawImage));
+        shelfGO.transform.SetParent(screen.transform, false);
+        SetRect(shelfGO, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -30), new Vector2(1280, 853));
+        var shelfRaw = shelfGO.GetComponent<RawImage>(); shelfRaw.texture = shelfTex;
+        var buttonsParent = new GameObject("Buttons", typeof(RectTransform));
+        buttonsParent.transform.SetParent(shelfGO.transform, false);
+        var bpRT = buttonsParent.GetComponent<RectTransform>();
+        bpRT.anchorMin = Vector2.zero; bpRT.anchorMax = Vector2.one; bpRT.offsetMin = Vector2.zero; bpRT.offsetMax = Vector2.zero;
+
+        // 기본 책 칸 그리드(2 책장 × 7 × 3 = 42). 이후 프리팹에서 눈으로 위치/크기 조정.
+        CreateBookGrid(bpRT, new Rect(0.05f, 0.13f, 0.42f, 0.74f), 7, 3, 0);
+        CreateBookGrid(bpRT, new Rect(0.53f, 0.13f, 0.42f, 0.74f), 7, 3, 21);
+
+        // 안내문(좌상단 상태줄)
+        var info = MakeText("Info", screen.transform, "이 책을 찾으세요!", 36,
+            new Vector2(0, 1), new Vector2(1, 1), Color.white);
+        SetRect(info.gameObject, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(0, -40), new Vector2(-340, 70));
+        info.alignment = TextAlignmentOptions.Left;
+
+        // "찾을 책" 카드(우상단)
+        var card = MakePanel("TargetCard", screen.transform, new Color(0.82f, 0.66f, 0.32f, 1f),
+            new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-40, -40), new Vector2(220, 330));
+        var inner = MakePanel("Inner", card.transform, new Color(0.10f, 0.09f, 0.07f, 1f),
+            Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+        var innerRT = inner.GetComponent<RectTransform>();
+        innerRT.offsetMin = new Vector2(6, 6); innerRT.offsetMax = new Vector2(-6, -6);
+        var cardLabel = MakeText("Label", inner.transform, "찾을 책", 32,
+            new Vector2(0, 1), new Vector2(1, 1), new Color(0.96f, 0.84f, 0.48f, 1f));
+        SetRect(cardLabel.gameObject, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(0, -10), new Vector2(0, 48));
+
+        var thumbGO = new GameObject("TargetThumb", typeof(RectTransform), typeof(RawImage), typeof(AspectRatioFitter));
+        thumbGO.transform.SetParent(inner.transform, false);
+        SetRect(thumbGO, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -26), new Vector2(88, 240));
+        thumbGO.GetComponent<RawImage>().raycastTarget = false;
+        var arf = thumbGO.GetComponent<AspectRatioFitter>();
+        arf.aspectMode = AspectRatioFitter.AspectMode.HeightControlsWidth;
+        arf.aspectRatio = 0.37f;
+
+        // 결과 패널(시간 종료 → 점수)
+        var resultP = MakePanel("ResultPanel", screen.transform, new Color(0.1f, 0.25f, 0.15f, 0.94f),
+            Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+        var resultT = MakeText("T", resultP.transform, "결과", 72, Vector2.zero, Vector2.one, Color.white);
+        resultP.SetActive(false);
+
+        var find = screen.AddComponent<FindBookScreen>();
+        SetRef(find, "panel", screen);
+        SetRef(find, "shelfImage", shelfRaw);
+        SetRef(find, "buttonsParent", bpRT);
+        SetRef(find, "targetThumb", thumbGO.GetComponent<RawImage>());
+        SetRef(find, "infoText", info);
+        SetRef(find, "resultPanel", resultP);
+        SetRef(find, "resultText", resultT);
+        return screen;
+    }
+
+    // 투명 클릭 칸(Image+Button) 격자를 buttonsParent 밑에 만든다(기본 배치용).
+    private static void CreateBookGrid(RectTransform parent, Rect uv, int cols, int rows, int startIndex)
+    {
+        float cw = uv.width / cols, ch = uv.height / rows;
+        int idx = startIndex;
+        for (int r = 0; r < rows; r++)
+            for (int c = 0; c < cols; c++)
+            {
+                var go = new GameObject($"Book_{idx}", typeof(RectTransform), typeof(Image), typeof(Button));
+                var rt = go.GetComponent<RectTransform>();
+                rt.SetParent(parent, false);
+                rt.anchorMin = new Vector2(uv.x + c * cw, uv.y + r * ch);
+                rt.anchorMax = new Vector2(uv.x + (c + 1) * cw, uv.y + (r + 1) * ch);
+                rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
+                var img = go.GetComponent<Image>();
+                img.color = new Color(1f, 1f, 1f, 0f); // 투명(클릭만 받음)
+                img.raycastTarget = true;
+                idx++;
+            }
     }
 
     // ---- 환경 헬퍼 ----
