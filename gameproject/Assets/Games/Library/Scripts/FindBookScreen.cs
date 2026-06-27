@@ -6,29 +6,21 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // 책 찾기 2D 화면. 책장 이미지에서 "목표 책"(크롭해서 보여줌)을 찾아 클릭한다.
-// 비슷한 책이 많아서 난이도가 있고, 제한시간 + 기회제한 + 여러 권 연속으로 더 어렵게.
+//
+// ★ 책 칸은 buttonsParent(=ShelfImage 위) 밑의 자식 오브젝트(Image+Button)들이다.
+//   프리팹(FindScreen.prefab)에서 각 칸을 책 위에 눈으로 배치/크기조절하면,
+//   여기서 그 오브젝트가 책장 이미지에서 차지한 영역을 0~1(uv)로 읽어 사용한다.
+//   (좌표값을 직접 입력할 필요 없음)
 public class FindBookScreen : MonoBehaviour
 {
-    // 책장(캐비닛) 영역을 이미지 UV(0~1)로 정의. cols x rows 격자로 책 칸을 만든다.
-    [System.Serializable]
-    public class Cabinet
-    {
-        public Rect uv = new Rect(0.05f, 0.13f, 0.42f, 0.74f); // x,y,width,height (0~1)
-        public int cols = 7;
-        public int rows = 3;
-    }
-
     [Header("UI 참조")]
     [SerializeField] private GameObject panel;
     [SerializeField] private RawImage shelfImage;       // 전체 책장 이미지(Texture)
-    [SerializeField] private RectTransform buttonsParent; // shelfImage 위에 똑같이 덮는 영역
+    [SerializeField] private RectTransform buttonsParent; // 책 칸 오브젝트들의 부모(ShelfImage 위에 덮음)
     [SerializeField] private RawImage targetThumb;        // 찾을 책(크롭)
     [SerializeField] private TMP_Text infoText;          // 안내/시간/기회
     [SerializeField] private GameObject resultPanel;
     [SerializeField] private TMP_Text resultText;
-
-    [Header("책장 영역(이미지에 맞게 조정)")]
-    [SerializeField] private List<Cabinet> cabinets = new List<Cabinet> { new Cabinet(), new Cabinet { uv = new Rect(0.53f, 0.13f, 0.42f, 0.74f) } };
 
     [Header("난이도")]
     [SerializeField] private float timeLimit = 30f;      // 제한시간(초)
@@ -63,7 +55,7 @@ public class FindBookScreen : MonoBehaviour
         if (resultPanel) resultPanel.SetActive(false);
 
         found = 0; timeLeft = timeLimit; playing = true;
-        BuildCells();
+        CollectBooks();
         NextTarget();
         UpdateInfo();
     }
@@ -74,6 +66,16 @@ public class FindBookScreen : MonoBehaviour
         playing = false;
         if (panel) panel.SetActive(false);
         if (owner) owner.OnScreenClosed();
+    }
+
+    // 결과 화면 "다시 플레이" 버튼 → 점수/시간 초기화하고 같은 화면에서 재시작
+    public void Restart()
+    {
+        if (resultPanel) resultPanel.SetActive(false);
+        found = 0; timeLeft = timeLimit; playing = true;
+        CollectBooks();
+        NextTarget();
+        UpdateInfo();
     }
 
     private void Update()
@@ -91,43 +93,52 @@ public class FindBookScreen : MonoBehaviour
         }
     }
 
-    private void BuildCells()
+    // buttonsParent 밑에 미리 놓인 책 칸 오브젝트들을 모아, 각 칸이 책장 이미지에서
+    // 차지한 영역을 uv(0~1)로 계산하고 클릭 이벤트를 연결한다.
+    private void CollectBooks()
     {
-        for (int i = buttonsParent.childCount - 1; i >= 0; i--)
-            Destroy(buttonsParent.GetChild(i).gameObject);
         cellUVs.Clear();
+        if (buttonsParent == null || shelfImage == null) return;
 
-        foreach (var cab in cabinets)
+        Canvas.ForceUpdateCanvases(); // 월드 좌표가 정확하도록 레이아웃 강제 갱신
+        var shelfRT = shelfImage.rectTransform;
+
+        int n = buttonsParent.childCount;
+        for (int i = 0; i < n; i++)
         {
-            float cw = cab.uv.width / Mathf.Max(1, cab.cols);
-            float ch = cab.uv.height / Mathf.Max(1, cab.rows);
-            for (int r = 0; r < cab.rows; r++)
-                for (int c = 0; c < cab.cols; c++)
-                {
-                    Rect uv = new Rect(cab.uv.x + c * cw, cab.uv.y + r * ch, cw, ch);
-                    int index = cellUVs.Count;
-                    cellUVs.Add(uv);
-                    CreateCellButton(uv, index);
-                }
+            var child = buttonsParent.GetChild(i) as RectTransform;
+            if (child == null || !child.gameObject.activeSelf) continue;
+
+            var img = child.GetComponent<Image>();
+            if (img == null) img = child.gameObject.AddComponent<Image>();
+            img.raycastTarget = true; // 투명이어도 클릭은 받게
+
+            var btn = child.GetComponent<Button>();
+            if (btn == null) btn = child.gameObject.AddComponent<Button>();
+
+            int idx = cellUVs.Count;
+            btn.onClick.RemoveAllListeners();
+            btn.onClick.AddListener(() => OnCellClicked(idx));
+
+            cellUVs.Add(RectToUV(child, shelfRT));
         }
     }
 
-    private void CreateCellButton(Rect uv, int index)
+    // 책 칸 오브젝트가 책장 이미지에서 차지하는 영역 → 0~1 uv (RawImage uvRect와 동일 좌표계)
+    private static Rect RectToUV(RectTransform book, RectTransform shelf)
     {
-        var go = new GameObject($"Book_{index}", typeof(RectTransform), typeof(Image), typeof(Button));
-        var rt = go.GetComponent<RectTransform>();
-        rt.SetParent(buttonsParent, false);
-        rt.anchorMin = new Vector2(uv.x, uv.y);
-        rt.anchorMax = new Vector2(uv.xMax, uv.yMax);
-        rt.offsetMin = Vector2.zero;
-        rt.offsetMax = Vector2.zero;
-
-        var img = go.GetComponent<Image>();
-        img.color = new Color(1f, 1f, 1f, 0f); // 투명(클릭만 받음)
-        img.raycastTarget = true;
-
-        int captured = index;
-        go.GetComponent<Button>().onClick.AddListener(() => OnCellClicked(captured));
+        var bc = new Vector3[4];
+        var sc = new Vector3[4];
+        book.GetWorldCorners(bc);   // 0:좌하 1:좌상 2:우상 3:우하
+        shelf.GetWorldCorners(sc);
+        float sw = sc[3].x - sc[0].x;
+        float sh = sc[1].y - sc[0].y;
+        if (Mathf.Abs(sw) < 1e-4f || Mathf.Abs(sh) < 1e-4f) return new Rect(0f, 0f, 1f, 1f);
+        float x = (bc[0].x - sc[0].x) / sw;
+        float y = (bc[0].y - sc[0].y) / sh;
+        float w = (bc[3].x - bc[0].x) / sw;
+        float h = (bc[1].y - bc[0].y) / sh;
+        return new Rect(x, y, w, h);
     }
 
     private void NextTarget()
